@@ -36,6 +36,10 @@ docker run -d \
   -e TELEGRAM_ALLOW_FROM="8881234567" \
   -e DISCORD_BOT_TOKEN="MTIzNDU2..." \
   -e DISCORD_ALLOW_FROM="123456789012345678" \
+  -e SLACK_APP_TOKEN="xapp-1-..." \
+  -e SLACK_BOT_TOKEN="xoxb-..." \
+  -e SLACK_ALLOW_USERS="U0123456789" \
+  -e SLACK_ALLOW_CHANNELS="C0123456789" \
   -v ./picobot-data:/home/picobot/.picobot \
   picobot
 ```
@@ -53,6 +57,10 @@ docker run -d \
 | `TELEGRAM_ALLOW_FROM` | No | — | Comma-separated Telegram user IDs |
 | `DISCORD_BOT_TOKEN` | No | — | Discord bot token from Developer Portal |
 | `DISCORD_ALLOW_FROM` | No | — | Comma-separated Discord user IDs |
+| `SLACK_APP_TOKEN` | No | — | Slack App-Level Token (`xapp-...`), also enables the channel |
+| `SLACK_BOT_TOKEN` | No | — | Slack Bot Token (`xoxb-...`), also enables the channel |
+| `SLACK_ALLOW_USERS` | No | — | Comma-separated Slack user IDs allowed to chat |
+| `SLACK_ALLOW_CHANNELS` | No | — | Comma-separated Slack channel IDs allowed. DMs ignore this list |
 
 ## Data Persistence
 

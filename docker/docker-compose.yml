@@ -24,6 +24,14 @@ services:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
       # Optional: Comma-separated Discord user IDs allowed to chat
       - DISCORD_ALLOW_FROM=${DISCORD_ALLOW_FROM:-}
+      # Optional: Slack App-Level Token (xapp-...), also enables the channel
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN:-}
+      # Optional: Slack Bot Token (xoxb-...), also enables the channel
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      # Optional: Comma-separated Slack user IDs allowed to chat
+      - SLACK_ALLOW_USERS=${SLACK_ALLOW_USERS:-}
+      # Optional: Comma-separated Slack channel IDs allowed to chat
+      - SLACK_ALLOW_CHANNELS=${SLACK_ALLOW_CHANNELS:-}
     volumes:
       # Persist config, workspace, memory, skills, and WhatsApp session DB
       - ./picobot-data:/home/picobot/.picobot
