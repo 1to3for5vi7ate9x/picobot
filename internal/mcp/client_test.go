@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -25,7 +26,7 @@ func TestHTTPClientInitializeAndListTools(t *testing.T) {
 				Result: json.RawMessage(`{"capabilities":{},"serverInfo":{"name":"test"}}`),
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		case "notifications/initialized":
 			w.WriteHeader(http.StatusAccepted)
 		case "tools/list":
@@ -34,7 +35,7 @@ func TestHTTPClientInitializeAndListTools(t *testing.T) {
 				Result: json.RawMessage(`{"tools":[{"name":"echo","description":"echoes input"}]}`),
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		default:
 			http.Error(w, "unknown method: "+req.Method, 400)
 		}
@@ -45,7 +46,7 @@ func TestHTTPClientInitializeAndListTools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPClient failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if client.Name() != "test" {
 		t.Fatalf("expected name 'test', got %q", client.Name())
@@ -68,24 +69,27 @@ func TestHTTPClientInitializeAndListTools(t *testing.T) {
 func TestHTTPClientCallTool(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		switch req.Method {
 		case "initialize":
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"capabilities":{}}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"capabilities":{}}`)})
 		case "notifications/initialized":
 			w.WriteHeader(http.StatusAccepted)
 		case "tools/list":
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"tools":[{"name":"greet"}]}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"tools":[{"name":"greet"}]}`)})
 		case "tools/call":
 			b, _ := json.Marshal(req.Params)
 			var p struct {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments"`
 			}
-			json.Unmarshal(b, &p)
+			_ = json.Unmarshal(b, &p)
 			text := "hello " + p.Arguments["name"].(string)
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"content":[{"type":"text","text":"` + text + `"}]}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"content":[{"type":"text","text":"` + text + `"}]}`)})
 		}
 	}))
 	defer srv.Close()
@@ -94,9 +98,9 @@ func TestHTTPClientCallTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPClient: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
-	result, err := client.CallTool(nil, "greet", map[string]interface{}{"name": "world"})
+	result, err := client.CallTool(context.TODO(), "greet", map[string]interface{}{"name": "world"})
 	if err != nil {
 		t.Fatalf("CallTool: %v", err)
 	}
@@ -108,17 +112,20 @@ func TestHTTPClientCallTool(t *testing.T) {
 func TestHTTPClientCallToolError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		switch req.Method {
 		case "initialize":
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"capabilities":{}}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"capabilities":{}}`)})
 		case "notifications/initialized":
 			w.WriteHeader(http.StatusAccepted)
 		case "tools/list":
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"tools":[{"name":"fail"}]}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"tools":[{"name":"fail"}]}`)})
 		case "tools/call":
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"content":[{"type":"text","text":"bad thing"}],"isError":true}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"content":[{"type":"text","text":"bad thing"}],"isError":true}`)})
 		}
 	}))
 	defer srv.Close()
@@ -127,9 +134,9 @@ func TestHTTPClientCallToolError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPClient: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
-	_, err = client.CallTool(nil, "fail", nil)
+	_, err = client.CallTool(context.TODO(), "fail", nil)
 	if err == nil {
 		t.Fatal("expected error from isError:true response")
 	}
@@ -138,17 +145,20 @@ func TestHTTPClientCallToolError(t *testing.T) {
 func TestHTTPClientSSEResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		switch req.Method {
 		case "initialize":
 			w.Header().Set("Content-Type", "text/event-stream")
 			resp, _ := json.Marshal(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"capabilities":{}}`)})
-			w.Write([]byte("event: message\ndata: " + string(resp) + "\n\n"))
+			_, _ = w.Write([]byte("event: message\ndata: " + string(resp) + "\n\n"))
 		case "notifications/initialized":
 			w.WriteHeader(http.StatusAccepted)
 		case "tools/list":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"tools":[]}`)})
+			_ = json.NewEncoder(w).Encode(rpcResponse{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"tools":[]}`)})
 		}
 	}))
 	defer srv.Close()
@@ -157,7 +167,7 @@ func TestHTTPClientSSEResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPClient: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if len(client.Tools()) != 0 {
 		t.Fatalf("expected 0 tools, got %d", len(client.Tools()))

@@ -44,7 +44,7 @@ func newTestMCPServer(t *testing.T) (*httptest.Server, *mcp.Client) {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments"`
 			}
-			json.Unmarshal(req.Params, &params)
+			_ = json.Unmarshal(req.Params, &params)
 			text := strings.ToUpper(params.Arguments["text"].(string))
 			json.NewEncoder(w).Encode(rpcResp{
 				JSONRPC: "2.0", ID: req.ID,
