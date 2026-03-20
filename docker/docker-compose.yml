@@ -5,6 +5,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: picobot
     restart: unless-stopped
+    network_mode: host
     environment:
       # Required: OpenAI-compatible API key (works with OpenRouter, OpenAI, etc.)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-or-v1-REPLACE_ME}
